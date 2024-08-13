@@ -78,3 +78,72 @@ class ToDoApp:
         
         self.redo_button = tk.Button(self.button_frame, text="Redo", command=self.redo, width=15, bg=self.theme["btn_color"], fg="white")
         self.redo_button.grid(row=1, column=2, padx=10, pady=5)
+
+       
+    def create_menu(self):
+        self.menu = tk.Menu(self.root)
+        self.root.config(menu=self.menu)
+        
+        self.file_menu = tk.Menu(self.menu, tearoff=0)
+        self.menu.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Load Tasks", command=self.load_tasks)
+        self.file_menu.add_command(label="Save Tasks", command=self.save_tasks)
+        self.file_menu.add_command(label="Export to CSV", command=self.export_to_csv)
+        self.file_menu.add_command(label="Import from CSV", command=self.import_from_csv)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=self.root.quit)
+        
+        self.edit_menu = tk.Menu(self.menu, tearoff=0)
+        self.menu.add_cascade(label="Edit", menu=self.edit_menu)
+        self.edit_menu.add_command(label="Settings", command=self.open_settings)
+        
+        self.help_menu = tk.Menu(self.menu, tearoff=0)
+        self.menu.add_cascade(label="Help", menu=self.help_menu)
+        self.help_menu.add_command(label="About", command=self.show_about)
+        
+    def add_task(self):
+        task = self.entry.get()
+        category = self.category_var.get()
+        priority = self.priority_var.get()
+        due_date = self.due_date_var.get()
+        
+        if task != "":
+            task_info = {
+                "task": task,
+                "category": category,
+                "priority": priority,
+                "due_date": due_date,
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            self.tasks.append(task_info)
+            self.undo_stack.append(("add", task_info))
+            self.update_listbox()
+            self.entry.delete(0, tk.END)
+            self.category_entry.delete(0, tk.END)
+            self.due_date_entry.delete(0, tk.END)
+        else:
+            messagebox.showwarning("Warning", "You must enter a task.")
+            
+    def remove_task(self):
+        selected_task = self.listbox.curselection()
+        if selected_task:
+            task_info = self.tasks.pop(selected_task[0])
+            self.undo_stack.append(("remove", task_info))
+            self.update_listbox()
+        else:
+            messagebox.showwarning("Warning", "You must select a task.")
+    
+    def update_task(self):
+        selected_task = self.listbox.curselection()
+        if selected_task:
+            task_info = self.tasks[selected_task[0]]
+            new_task = simpledialog.askstring("Update Task", "Edit your task:", initialvalue=task_info["task"])
+            if new_task:
+                task_info["task"] = new_task
+                task_info["category"] = simpledialog.askstring("Update Category", "Edit your category:", initialvalue=task_info["category"])
+                task_info["priority"] = simpledialog.askstring("Update Priority", "Edit your priority:", initialvalue=task_info["priority"])
+                task_info["due_date"] = simpledialog.askstring("Update Due Date", "Edit your due date:", initialvalue=task_info["due_date"])
+                self.undo_stack.append(("update", task_info))
+                self.update_listbox()
+        else:
+            messagebox.showwarning("Warning", "You must select a task.")
