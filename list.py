@@ -147,3 +147,76 @@ class ToDoApp:
                 self.update_listbox()
         else:
             messagebox.showwarning("Warning", "You must select a task.")
+   
+    def sort_tasks(self):
+        sort_by = simpledialog.askstring("Sort Tasks", "Sort by (task/category/priority/due_date):").lower()
+        if sort_by in ["task", "category", "priority", "due_date"]:
+            self.tasks.sort(key=lambda x: x.get(sort_by, ""))
+            self.update_listbox()
+        else:
+            messagebox.showwarning("Warning", "Invalid sort option.")
+    
+    def undo(self):
+        if self.undo_stack:
+            action, task_info = self.undo_stack.pop()
+            if action == "add":
+                self.tasks.remove(task_info)
+            elif action == "remove":
+                self.tasks.append(task_info)
+            elif action == "update":
+                old_task_info = next((task for task in self.tasks if task["task"] == task_info["task"]), None)
+                if old_task_info:
+                    old_task_info.update(task_info)
+            self.redo_stack.append((action, task_info))
+            self.update_listbox()
+    
+    def redo(self):
+        if self.redo_stack:
+            action, task_info = self.redo_stack.pop()
+            if action == "add":
+                self.tasks.append(task_info)
+            elif action == "remove":
+                self.tasks.remove(task_info)
+            elif action == "update":
+                old_task_info = next((task for task in self.tasks if task["task"] == task_info["task"]), None)
+                if old_task_info:
+                    old_task_info.update(task_info)
+            self.undo_stack.append((action, task_info))
+            self.update_listbox()
+    
+    def load_tasks(self):
+        try:
+            with open("tasks.json", "r") as file:
+                self.tasks = json.load(file)
+                self.update_listbox()
+        except FileNotFoundError:
+            messagebox.showwarning("Warning", "No saved tasks found.")
+    
+    def save_tasks(self):
+        with open("tasks.json", "w") as file:
+            json.dump(self.tasks, file, indent=4)
+        messagebox.showinfo("Success", "Tasks saved successfully.")
+    
+    def export_to_csv(self):
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if file_path:
+            with open(file_path, "w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(["Task", "Category", "Priority", "Due Date", "Created At"])
+                for task_info in self.tasks:
+                    writer.writerow([task_info["task"], task_info["category"], task_info["priority"], task_info["due_date"], task_info["created_at"]])
+            messagebox.showinfo("Success", "Tasks exported to CSV successfully.")
+    
+    def import_from_csv(self):
+        file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+        if file_path:
+            with open(file_path, "r") as file:
+                reader = csv.DictReader(file)
+                self.tasks = list(reader)
+                self.update_listbox()
+            messagebox.showinfo("Success", "Tasks imported from CSV successfully.")
+    
+    def open_settings(self):
+        settings_window = tk.Toplevel(self.root)
+        settings_window.title("Settings")
+        settings_window.geometry("300x300")
