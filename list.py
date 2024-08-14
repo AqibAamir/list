@@ -220,3 +220,111 @@ class ToDoApp:
         settings_window = tk.Toplevel(self.root)
         settings_window.title("Settings")
         settings_window.geometry("300x300")
+
+class ToDoApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("To-Do List App")
+            self.root.geometry("500x400")
+
+        # Initialize theme
+            self.theme = {
+            "bg_color": "#F5F5F5",
+            "fg_color": "#333333",
+            "btn_color": "#007BFF",
+            "font": ("Arial", 14)
+        }
+
+        # Create the main frame and widgets
+            self.button_frame = tk.Frame(self.root)
+            self.button_frame.pack(fill="x", padx=10, pady=10)
+
+            self.listbox = tk.Listbox(self.root, selectmode="extended", font=self.theme["font"])
+            self.listbox.pack(fill="both", expand=True, padx=10, pady=10)
+
+            self.entry = tk.Entry(self.root, font=self.theme["font"])
+            self.entry.pack(fill="x", padx=10, pady=5)
+
+        # Settings button
+            settings_button = tk.Button(self.button_frame, text="Settings", command=self.open_settings, font=self.theme["font"], bg=self.theme["btn_color"], fg=self.theme["fg_color"])
+            settings_button.pack(side="right", padx=10)
+
+        # Show About button
+            about_button = tk.Button(self.button_frame, text="About", command=self.show_about, font=self.theme["font"], bg=self.theme["btn_color"], fg=self.theme["fg_color"])
+            about_button.pack(side="left", padx=10)
+
+    def open_settings(self):
+        settings_window = tk.Toplevel(self.root)
+        settings_window.title("Settings")
+        settings_window.geometry("300x250")
+        settings_window.configure(bg=self.theme["bg_color"])
+
+        # Theme Selection
+        theme_label = tk.Label(settings_window, text="Select Theme:", font=self.theme["font"], bg=self.theme["bg_color"], fg=self.theme["fg_color"])
+        theme_label.pack(pady=10)
+        
+        self.theme_var = tk.StringVar(value="Default")
+        default_theme = tk.Radiobutton(settings_window, text="Default", variable=self.theme_var, value="Default", font=self.theme["font"], command=self.change_theme)
+        default_theme.pack(anchor="w", padx=20)
+        dark_theme = tk.Radiobutton(settings_window, text="Dark", variable=self.theme_var, value="Dark", font=self.theme["font"], command=self.change_theme)
+        dark_theme.pack(anchor="w", padx=20)
+
+        # Font Size Selection
+        font_label = tk.Label(settings_window, text="Select Font Size:", font=self.theme["font"], bg=self.theme["bg_color"], fg=self.theme["fg_color"])
+        font_label.pack(pady=10)
+
+        self.font_size_var = tk.IntVar(value=14)
+        font_size_spinbox = tk.Spinbox(settings_window, from_=10, to=30, textvariable=self.font_size_var, font=self.theme["font"])
+        font_size_spinbox.pack(pady=5)
+
+        apply_button = tk.Button(settings_window, text="Apply", command=self.apply_settings, font=self.theme["font"], bg=self.theme["btn_color"], fg=self.theme["fg_color"])
+        apply_button.pack(pady=20)
+
+    def change_theme(self):
+        theme = self.theme_var.get()
+        if theme == "Default":
+            self.theme = {
+                "bg_color": "#F5F5F5",
+                "fg_color": "#333333",
+                "btn_color": "#007BFF",
+                "font": ("Arial", 14)
+            }
+        elif theme == "Dark":
+            self.theme = {
+                "bg_color": "#333333",
+                "fg_color": "#F5F5F5",
+                "btn_color": "#1E90FF",
+                "font": ("Arial", 14)
+            }
+        self.apply_theme()
+    
+    def apply_theme(self):
+        self.root.configure(bg=self.theme["bg_color"])
+        self.listbox.configure(bg=self.theme["bg_color"], fg=self.theme["fg_color"], font=self.theme["font"])
+        self.entry.configure(bg=self.theme["bg_color"], fg=self.theme["fg_color"], font=self.theme["font"])
+        for button in self.button_frame.winfo_children():
+            button.configure(bg=self.theme["btn_color"], fg=self.theme["fg_color"], font=self.theme["font"])
+
+    def apply_settings(self):
+        new_font_size = self.font_size_var.get()
+        self.theme["font"] = ("Arial", new_font_size)
+        self.apply_theme()
+
+    def reset_settings(self):
+        self.theme_var.set("Default")
+        self.font_size_var.set(14)
+        self.change_theme()
+        self.apply_theme()
+
+        messagebox.showinfo("Settings", "Settings have been reset to default.")
+
+    def show_about(self):
+        messagebox.showinfo("About", "Advanced To-Do List App\nVersion 2.0\nCreated by ChatGPT")
+
+def main():
+    root = tk.Tk()
+    app = ToDoApp(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
