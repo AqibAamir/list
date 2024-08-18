@@ -4,7 +4,12 @@ ToDoApp Class Initialization: Defines a ToDoApp class to create an advanced to-d
 
 Widget Creation and Layout: Initializes and arranges widgets such as entries, buttons, and listboxes in the main window, including functionalities for filtering, sorting, and applying themes.
 
-
+to use this program, paste the code into a python ide and install the required libraries: 
+-import tkinter as tk
+-from tkinter import messagebox, simpledialog, ttk, filedialog
+-from datetime import datetime
+-import json
+-import csv
 
 
 
