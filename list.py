@@ -228,9 +228,19 @@ class ToDoApp:
         if file_path:
             with open(file_path, "r") as file:
                 reader = csv.DictReader(file)
-                self.tasks = list(reader)
-                self.update_listbox()
-            messagebox.showinfo("Success", "Tasks imported from CSV successfully.")
+                self.tasks = [
+                {
+                    "task": row["Task"],
+                    "category": row["Category"],
+                    "priority": row["Priority"],
+                    "due_date": row["Due Date"],
+                    "created_at": row["Created At"]
+                }
+                for row in reader
+            ]
+            self.update_listbox()
+        messagebox.showinfo("Success", "Tasks imported from CSV successfully.")
+
     
     def open_settings(self):
         settings_window = tk.Toplevel(self.root)
