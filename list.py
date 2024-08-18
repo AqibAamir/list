@@ -23,6 +23,7 @@ class ToDoApp:
         self.create_widgets()
         self.create_menu()
         self.apply_theme()
+        self.bind_shortcuts()
         
     def create_widgets(self):
         self.search_var = tk.StringVar()
@@ -78,8 +79,23 @@ class ToDoApp:
         
         self.redo_button = tk.Button(self.button_frame, text="Redo", command=self.redo, width=15, bg=self.theme["btn_color"], fg="white")
         self.redo_button.grid(row=1, column=2, padx=10, pady=5)
-
-       
+        
+        self.filter_frame = tk.Frame(self.root)
+        self.filter_frame.pack(pady=10)
+        
+        self.filter_label = tk.Label(self.filter_frame, text="Filter by:", font=self.theme["font"], bg=self.theme["bg_color"], fg=self.theme["fg_color"])
+        self.filter_label.pack(side=tk.LEFT, padx=5)
+        
+        self.filter_category_var = tk.StringVar()
+        self.filter_category_menu = ttk.Combobox(self.filter_frame, textvariable=self.filter_category_var, values=["All"] + list(set(task["category"] for task in self.tasks)), font=self.theme["font"], width=15)
+        self.filter_category_menu.pack(side=tk.LEFT, padx=5)
+        self.filter_category_menu.bind("<<ComboboxSelected>>", self.update_listbox)
+        
+        self.filter_priority_var = tk.StringVar()
+        self.filter_priority_menu = ttk.Combobox(self.filter_frame, textvariable=self.filter_priority_var, values=["All", "Low", "Medium", "High"], font=self.theme["font"], width=15)
+        self.filter_priority_menu.pack(side=tk.LEFT, padx=5)
+        self.filter_priority_menu.bind("<<ComboboxSelected>>", self.update_listbox)
+        
     def create_menu(self):
         self.menu = tk.Menu(self.root)
         self.root.config(menu=self.menu)
@@ -101,6 +117,14 @@ class ToDoApp:
         self.menu.add_cascade(label="Help", menu=self.help_menu)
         self.help_menu.add_command(label="About", command=self.show_about)
         
+    def bind_shortcuts(self):
+        self.root.bind('<Control-a>', lambda event: self.add_task())
+        self.root.bind('<Control-r>', lambda event: self.remove_task())
+        self.root.bind('<Control-u>', lambda event: self.update_task())
+        self.root.bind('<Control-s>', lambda event: self.sort_tasks())
+        self.root.bind('<Control-z>', lambda event: self.undo())
+        self.root.bind('<Control-y>', lambda event: self.redo())
+    
     def add_task(self):
         task = self.entry.get()
         category = self.category_var.get()
@@ -149,12 +173,12 @@ class ToDoApp:
             messagebox.showwarning("Warning", "You must select a task.")
    
     def sort_tasks(self):
-        sort_by = simpledialog.askstring("Sort Tasks", "Sort by (task/category/priority/due_date):").lower()
+        sort_by = simpledialog.askstring("Sort By", "Sort by (task, category, priority, due_date):")
         if sort_by in ["task", "category", "priority", "due_date"]:
-            self.tasks.sort(key=lambda x: x.get(sort_by, ""))
+            self.tasks.sort(key=lambda x: x[sort_by])
             self.update_listbox()
         else:
-            messagebox.showwarning("Warning", "Invalid sort option.")
+            messagebox.showwarning("Warning", "Invalid sort criteria.")
     
     def undo(self):
         if self.undo_stack:
@@ -164,38 +188,30 @@ class ToDoApp:
             elif action == "remove":
                 self.tasks.append(task_info)
             elif action == "update":
-                old_task_info = next((task for task in self.tasks if task["task"] == task_info["task"]), None)
-                if old_task_info:
-                    old_task_info.update(task_info)
-            self.redo_stack.append((action, task_info))
+                self.redo_stack.append(("update", task_info))
+                self.tasks = [t for t in self.tasks if t["task"] != task_info["task"]]
             self.update_listbox()
     
     def redo(self):
         if self.redo_stack:
             action, task_info = self.redo_stack.pop()
-            if action == "add":
+            if action == "update":
                 self.tasks.append(task_info)
-            elif action == "remove":
-                self.tasks.remove(task_info)
-            elif action == "update":
-                old_task_info = next((task for task in self.tasks if task["task"] == task_info["task"]), None)
-                if old_task_info:
-                    old_task_info.update(task_info)
-            self.undo_stack.append((action, task_info))
             self.update_listbox()
-    
+
     def load_tasks(self):
-        try:
-            with open("tasks.json", "r") as file:
+        file_path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
+        if file_path:
+            with open(file_path, "r") as file:
                 self.tasks = json.load(file)
                 self.update_listbox()
-        except FileNotFoundError:
-            messagebox.showwarning("Warning", "No saved tasks found.")
     
     def save_tasks(self):
-        with open("tasks.json", "w") as file:
-            json.dump(self.tasks, file, indent=4)
-        messagebox.showinfo("Success", "Tasks saved successfully.")
+        file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if file_path:
+            with open(file_path, "w") as file:
+                json.dump(self.tasks, file, indent=4)
+            messagebox.showinfo("Success", "Tasks saved successfully.")
     
     def export_to_csv(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
@@ -221,45 +237,6 @@ class ToDoApp:
         settings_window.title("Settings")
         settings_window.geometry("300x300")
 
-class ToDoApp:
-        def __init__(self, root):
-            self.root = root
-            self.root.title("To-Do List App")
-            self.root.geometry("500x400")
-
-        # Initialize theme
-            self.theme = {
-            "bg_color": "#F5F5F5",
-            "fg_color": "#333333",
-            "btn_color": "#007BFF",
-            "font": ("Arial", 14)
-        }
-
-        # Create the main frame and widgets
-            self.button_frame = tk.Frame(self.root)
-            self.button_frame.pack(fill="x", padx=10, pady=10)
-
-            self.listbox = tk.Listbox(self.root, selectmode="extended", font=self.theme["font"])
-            self.listbox.pack(fill="both", expand=True, padx=10, pady=10)
-
-            self.entry = tk.Entry(self.root, font=self.theme["font"])
-            self.entry.pack(fill="x", padx=10, pady=5)
-
-        # Settings button
-            settings_button = tk.Button(self.button_frame, text="Settings", command=self.open_settings, font=self.theme["font"], bg=self.theme["btn_color"], fg=self.theme["fg_color"])
-            settings_button.pack(side="right", padx=10)
-
-        # Show About button
-            about_button = tk.Button(self.button_frame, text="About", command=self.show_about, font=self.theme["font"], bg=self.theme["btn_color"], fg=self.theme["fg_color"])
-            about_button.pack(side="left", padx=10)
-
-    def open_settings(self):
-        settings_window = tk.Toplevel(self.root)
-        settings_window.title("Settings")
-        settings_window.geometry("300x250")
-        settings_window.configure(bg=self.theme["bg_color"])
-
-        # Theme Selection
         theme_label = tk.Label(settings_window, text="Select Theme:", font=self.theme["font"], bg=self.theme["bg_color"], fg=self.theme["fg_color"])
         theme_label.pack(pady=10)
         
@@ -269,7 +246,6 @@ class ToDoApp:
         dark_theme = tk.Radiobutton(settings_window, text="Dark", variable=self.theme_var, value="Dark", font=self.theme["font"], command=self.change_theme)
         dark_theme.pack(anchor="w", padx=20)
 
-        # Font Size Selection
         font_label = tk.Label(settings_window, text="Select Font Size:", font=self.theme["font"], bg=self.theme["bg_color"], fg=self.theme["fg_color"])
         font_label.pack(pady=10)
 
@@ -299,27 +275,29 @@ class ToDoApp:
         self.apply_theme()
     
     def apply_theme(self):
-        self.root.configure(bg=self.theme["bg_color"])
-        self.listbox.configure(bg=self.theme["bg_color"], fg=self.theme["fg_color"], font=self.theme["font"])
-        self.entry.configure(bg=self.theme["bg_color"], fg=self.theme["fg_color"], font=self.theme["font"])
-        for button in self.button_frame.winfo_children():
-            button.configure(bg=self.theme["btn_color"], fg=self.theme["fg_color"], font=self.theme["font"])
+        try:
+            self.entry.configure(bg=self.theme["bg_color"])
+        except TclError as e:
+            print("Error applying theme to entry:", e)
 
-    def apply_settings(self):
-        new_font_size = self.font_size_var.get()
-        self.theme["font"] = ("Arial", new_font_size)
-        self.apply_theme()
-
-    def reset_settings(self):
-        self.theme_var.set("Default")
-        self.font_size_var.set(14)
-        self.change_theme()
-        self.apply_theme()
-
-        messagebox.showinfo("Settings", "Settings have been reset to default.")
+            def apply_settings(self):
+                new_font_size = self.font_size_var.get()
+                self.theme["font"] = ("Arial", new_font_size)
+                self.apply_theme()
 
     def show_about(self):
-        messagebox.showinfo("About", "Advanced To-Do List App\nVersion 2.0\nCreated by ChatGPT")
+        messagebox.showinfo("About", "Advanced To-Do List App\nVersion 2.0\nCreated by Aqib Aamir for Hack Club")
+
+    def update_listbox(self, *args):
+        self.listbox.delete(0, tk.END)
+        search_term = self.search_var.get().lower()
+        filter_category = self.filter_category_var.get()
+        filter_priority = self.filter_priority_var.get()
+
+        for task in self.tasks:
+            if search_term in task["task"].lower() and (filter_category == "All" or filter_category == task["category"]) and (filter_priority == "All" or filter_priority == task["priority"]):
+                display_text = f"{task['task']} ({task['category']}, {task['priority']}, {task['due_date']})"
+                self.listbox.insert(tk.END, display_text)
 
 def main():
     root = tk.Tk()
@@ -328,3 +306,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
